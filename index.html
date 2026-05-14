@@ -1,0 +1,215 @@
+```html
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VidFlow - Ultimate Video Downloader</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & Babel CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass-card {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-white transition-colors duration-300">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        const App = () => {
+            const [url, setUrl] = useState('');
+            const [isDownloading, setIsDownloading] = useState(false);
+            const [progress, setProgress] = useState(0);
+            const [status, setStatus] = useState('idle'); 
+            const [isDarkMode, setIsDarkMode] = useState(true);
+            const [downloadHistory, setDownloadHistory] = useState([]);
+            const [format, setFormat] = useState('mp4');
+
+            // Initialize Lucide Icons
+            useEffect(() => {
+                lucide.createIcons();
+            }, [status, downloadHistory, isDarkMode]);
+
+            // Persist History
+            useEffect(() => {
+                const saved = localStorage.getItem('vidflow_history');
+                if (saved) setDownloadHistory(JSON.parse(saved));
+            }, []);
+
+            useEffect(() => {
+                localStorage.setItem('vidflow_history', JSON.stringify(downloadHistory));
+            }, [downloadHistory]);
+
+            const handleDownload = (e) => {
+                e.preventDefault();
+                if (!url) return;
+
+                setStatus('loading');
+                setIsDownloading(true);
+
+                // Simulation Logic
+                setTimeout(() => {
+                    setStatus('downloading');
+                    let p = 0;
+                    const interval = setInterval(() => {
+                        p += Math.random() * 15;
+                        if (p >= 100) {
+                            p = 100;
+                            clearInterval(interval);
+                            finishDownload();
+                        }
+                        setProgress(p);
+                    }, 300);
+                }, 1000);
+            };
+
+            const finishDownload = () => {
+                const newEntry = {
+                    id: Date.now(),
+                    title: `Video_${Math.floor(Math.random() * 1000)}.${format}`,
+                    url: url,
+                    format: format,
+                    date: new Date().toLocaleDateString(),
+                    size: (Math.random() * 50 + 10).toFixed(1) + " MB"
+                };
+                setDownloadHistory([newEntry, ...downloadHistory]);
+                setStatus('success');
+                setIsDownloading(false);
+                setProgress(0);
+                setUrl('');
+                setTimeout(() => setStatus('idle'), 3000);
+            };
+
+            return (
+                <div className={`${isDarkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'} min-h-screen transition-colors`}>
+                    {/* Header */}
+                    <nav className={`p-5 border-b flex justify-between items-center sticky top-0 z-50 ${isDarkMode ? 'bg-slate-950/80 border-slate-800' : 'bg-white/80 border-slate-200'} backdrop-blur-md`}>
+                        <div className="flex items-center gap-2">
+                            <div className="bg-blue-600 p-2 rounded-lg"><i data-lucide="download" class="text-white w-5 h-5"></i></div>
+                            <h1 className="text-xl font-black">VIDFLOW</h1>
+                        </div>
+                        <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 rounded-full hover:bg-slate-800 transition-all">
+                            {isDarkMode ? <i data-lucide="sun" class="text-yellow-400"></i> : <i data-lucide="moon"></i>}
+                        </button>
+                    </nav>
+
+                    <main className="max-w-3xl mx-auto px-6 py-12">
+                        <div className="text-center mb-12">
+                            <h2 className="text-4xl font-extrabold mb-3">Video Downloader</h2>
+                            <p className="opacity-60">Tempelkan tautan video favorit Anda di bawah ini.</p>
+                        </div>
+
+                        {/* Input Box */}
+                        <div className={`p-8 rounded-[2rem] border shadow-2xl ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                            <form onSubmit={handleDownload} className="space-y-6">
+                                <div className="relative">
+                                    <input 
+                                        type="text" 
+                                        placeholder="https://www.youtube.com/watch?v=..."
+                                        className={`w-full p-5 rounded-2xl border-2 outline-none transition-all ${isDarkMode ? 'bg-slate-800 border-slate-700 focus:border-blue-600 text-white' : 'bg-slate-50 border-slate-100 focus:border-blue-600'}`}
+                                        value={url}
+                                        onChange={(e) => setUrl(e.target.value)}
+                                        disabled={isDownloading}
+                                    />
+                                </div>
+
+                                <div className="flex flex-col md:flex-row gap-4">
+                                    <div className={`flex flex-1 p-1 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                        <button type="button" onClick={() => setFormat('mp4')} className={`flex-1 py-2 rounded-lg font-bold ${format === 'mp4' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400'}`}>MP4</button>
+                                        <button type="button" onClick={() => setFormat('mp3')} className={`flex-1 py-2 rounded-lg font-bold ${format === 'mp3' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400'}`}>MP3</button>
+                                    </div>
+                                    <button 
+                                        type="submit" 
+                                        disabled={!url || isDownloading}
+                                        className={`md:w-64 py-4 rounded-xl font-black tracking-widest transition-all ${!url || isDownloading ? 'bg-slate-700 text-slate-500' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-900/20'}`}
+                                    >
+                                        {status === 'downloading' ? `${Math.round(progress)}%` : 'UNDUH SEKARANG'}
+                                    </button>
+                                </div>
+                            </form>
+
+                            {isDownloading && (
+                                <div className="mt-8 space-y-3">
+                                    <div className="flex justify-between text-xs font-bold text-blue-500 uppercase tracking-widest">
+                                        <span>Memproses Data...</span>
+                                        <span>{Math.round(progress)}%</span>
+                                    </div>
+                                    <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+                                        <div className="h-full bg-blue-600 transition-all duration-300 shadow-[0_0_15px_rgba(37,99,235,0.5)]" style={{width: `${progress}%`}}></div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {status === 'success' && (
+                                <div className="mt-6 p-4 bg-green-500/10 border border-green-500/20 text-green-500 rounded-xl flex items-center gap-3 animate-bounce">
+                                    <i data-lucide="check-circle" class="w-5 h-5"></i>
+                                    <span className="font-bold">Berhasil! Video siap diunduh.</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* History */}
+                        <div className="mt-16">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-xl font-black flex items-center gap-2 uppercase tracking-tighter">
+                                    <i data-lucide="history" class="text-blue-600"></i> Riwayat
+                                </h3>
+                                {downloadHistory.length > 0 && (
+                                    <button onClick={() => setDownloadHistory([])} className="text-xs font-bold text-red-500 hover:opacity-70 uppercase tracking-widest">Hapus Semua</button>
+                                )}
+                            </div>
+
+                            {downloadHistory.length === 0 ? (
+                                <div className="py-12 border-2 border-dashed border-slate-800 rounded-3xl text-center text-slate-600 font-bold">
+                                    Belum ada aktivitas.
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {downloadHistory.map(item => (
+                                        <div key={item.id} className={`p-4 rounded-2xl border flex items-center justify-between transition-all hover:border-blue-600/50 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                            <div className="flex items-center gap-4">
+                                                <div className="p-3 bg-blue-600/10 rounded-xl text-blue-500">
+                                                    <i data-lucide={item.format === 'mp4' ? 'video' : 'music'} class="w-5 h-5"></i>
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-sm leading-none">{item.title}</h4>
+                                                    <p className="text-[10px] opacity-40 font-bold mt-1 uppercase tracking-widest">{item.date} • {item.size}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button className="p-2 hover:bg-slate-800 rounded-lg transition-all text-blue-500"><i data-lucide="external-link" class="w-5 h-5"></i></button>
+                                                <button onClick={() => setDownloadHistory(downloadHistory.filter(h => h.id !== item.id))} className="p-2 hover:bg-red-500/10 rounded-lg transition-all text-red-500"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </main>
+
+                    <footer className="py-12 text-center opacity-30 text-[10px] font-bold uppercase tracking-[0.3em]">
+                        &copy; 2024 VidFlow Ultimate • All Rights Reserved
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
+```
